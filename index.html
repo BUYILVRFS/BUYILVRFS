@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>קניית כרטיסים/title>
+<title>קניית כרטיסים</title>
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;700;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
@@ -82,6 +82,8 @@
         <h4>הגדרת משחק חדש</h4>
         <input type="text" id="admin-teams" placeholder="מי נגד מי (לדוגמה: ברזיל נגד ארגנטינה)">
         <input type="number" id="admin-price" placeholder="מחיר כרטיס (₪)">
+        <input type="text" id="admin-game-code" placeholder="קוד משחק/קישור לצפייה (מה הלקוח מקבל)">
+        
         <div style="display:flex; gap:10px;">
             <button id="admin-open-game" class="action-btn" style="background:#4caf50;">פתח משחק למכירה</button>
             <button id="admin-close-game" class="action-btn" style="background:var(--secondary);">סגור משחק</button>
@@ -129,6 +131,7 @@
             document.getElementById('display-price').innerText = d.price;
             window.currentGamePrice = d.price;
             window.currentGameTeams = d.teams;
+            window.currentGameCode = d.gameCode; // שמירת קוד המשחק הגלובלי
         } else {
             document.getElementById('no-game').classList.remove('hidden');
             document.getElementById('active-game-box').classList.add('hidden');
@@ -139,8 +142,17 @@
   document.getElementById('admin-open-game').onclick = async () => {
     const teams = document.getElementById('admin-teams').value;
     const price = document.getElementById('admin-price').value;
-    if(!teams || !price) return showToast("מלא את פרטי המשחק");
-    await setDoc(doc(db, "settings", "gameConfig"), { isOpen: true, teams, price: Number(price) });
+    const gameCode = document.getElementById('admin-game-code').value; // קבלת קוד המשחק
+
+    if(!teams || !price || !gameCode) return showToast("מלא את כל פרטי המשחק (כולל קוד)");
+    
+    // שמירת הנתונים בפיירבייס כולל הקוד
+    await setDoc(doc(db, "settings", "gameConfig"), { 
+        isOpen: true, 
+        teams, 
+        price: Number(price), 
+        gameCode: gameCode 
+    });
     showToast("המשחק נפתח למכירה!");
   };
 
@@ -157,9 +169,17 @@
     if(balance < window.currentGamePrice) return showToast("אין לך מספיק כסף!");
 
     await updateDoc(doc(db, "users", u.uid), { balance: balance - window.currentGamePrice });
-    const code = "GAME-" + Math.random().toString(36).substr(2,6).toUpperCase();
-    await addDoc(collection(db, "userCodes"), { uid: u.uid, code: code, teams: window.currentGameTeams });
-    showToast("כרטיס נרכש!");
+    
+    // במקום לייצר קוד אקראי, אנחנו משתמשים בקוד שהגדיר המנהל
+    const code = window.currentGameCode; 
+    
+    await addDoc(collection(db, "userCodes"), { 
+        uid: u.uid, 
+        code: code, 
+        teams: window.currentGameTeams,
+        purchasedAt: new Date()
+    });
+    showToast("כרטיס נרכש בהצלחה!");
   };
 
   window.buySub = async () => {
@@ -217,9 +237,20 @@
             }
         });
 
+        // הצגת הקודים שנרכשו
         onSnapshot(query(collection(db, "userCodes"), where("uid", "==", user.uid)), (snap) => {
             const l = document.getElementById('user-codes-list'); l.innerHTML = "";
-            snap.forEach(doc => l.innerHTML += `<li class="card" style="margin-bottom:10px; padding:10px;">🎫 ${doc.data().teams} | קוד: ${doc.data().code}</li>`);
+            snap.forEach(doc => {
+                const data = doc.data();
+                // הוספת סטייל להצגת הקוד בצורה בולטת
+                l.innerHTML += `
+                <li class="card" style="margin-bottom:10px; padding:15px; border-right:4px solid var(--primary);">
+                    <div style="font-weight:bold; font-size:1.1em; color:var(--primary); margin-bottom:5px;">🎫 ${data.teams}</div>
+                    <div style="background:rgba(0,0,0,0.3); padding:8px; border-radius:5px; font-family:monospace;">
+                        קוד/קישור: <span style="color:#fff; user-select:all;">${data.code}</span>
+                    </div>
+                </li>`;
+            });
         });
     }
   });
