@@ -3,8 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>מערכת כרטיסים</title>
+<title>HABIGON | מערכת ניהול משחקים ושידורים</title>
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
 <style>
   :root {
     --primary: #00f2ea; --secondary: #ff0055; --admin-color: #ff9800; --discord-color: #5865F2;
@@ -22,19 +24,23 @@
 
   input { width: 100%; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); padding: 12px; border-radius: 10px; color: #fff; margin-bottom: 10px; }
   .action-btn { width: 100%; padding: 12px; border-radius: 10px; border: none; background: linear-gradient(45deg, var(--secondary), #ff4d88); color: white; font-weight: bold; cursor: pointer; transition: 0.3s; }
-  .action-btn:hover { opacity: 0.9; transform: scale(1.02); }
+  .action-btn:hover { opacity: 0.8; transform: translateY(-2px); }
   
   .admin-table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.9rem; }
   .admin-table th, .admin-table td { padding: 10px; text-align: right; border-bottom: 1px solid rgba(255,255,255,0.1); }
   
   .game-box { background: linear-gradient(135deg, #1a1a2e, #16213e); padding: 20px; border-radius: 15px; text-align: center; border: 2px solid var(--primary); }
-  .toast { position: fixed; bottom: 20px; left: 20px; background: #1a1a2e; color: #fff; padding: 15px; border-radius: 10px; border-right: 4px solid var(--primary); z-index: 2000; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
+  .discord-box { background: rgba(88, 101, 242, 0.15); border: 2px solid var(--discord-color); padding: 20px; border-radius: 15px; text-align: center; margin-top: 20px; animation: fadeIn 0.5s ease; }
+  
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  
+  .toast { position: fixed; bottom: 20px; left: 20px; background: #1a1a2e; color: #fff; padding: 15px; border-radius: 10px; border-right: 4px solid var(--primary); z-index: 2000; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
 </style>
 </head>
 <body>
 
 <nav>
-  <div class="logo">ShopIL</div>
+  <div class="logo">HABIGON</div>
   <div id="user-info" class="hidden" style="display:flex; align-items:center; gap:15px;">
     <div style="text-align: left;"><span id="user-display" style="font-weight:900"></span><br><small id="user-balance-nav" style="color:var(--primary)">0 ₪</small></div>
     <button id="logoutBtn" style="background:none; border:1px solid var(--primary); color:var(--primary); cursor:pointer; border-radius:20px; padding:5px 15px;">התנתק</button>
@@ -44,70 +50,74 @@
 <main>
   <section id="auth-section" class="card">
     <h2 id="auth-title">כניסה למערכת</h2>
+    
     <div id="signup-fields" class="hidden">
-        <input type="text" id="reg-name" placeholder="שם מלא">
+        <input type="text" id="reg-name" placeholder="שם מלא (לדוגמה: יוסי כהן)">
     </div>
+    
     <input type="email" id="email" placeholder="אימייל">
-    <input type="password" id="password" placeholder="סיסמה (לפחות 6 תווים)">
+    <input type="password" id="password" placeholder="סיסמה (מינימום 6 תווים)">
     
-    <button id="authActionBtn" class="action-btn">התחבר</button>
+    <button id="loginBtn" class="action-btn">התחבר</button>
+    <button id="signupBtn" class="action-btn hidden" style="background:var(--primary); color:#000;">צור חשבון חדש</button>
     
-    <p style="text-align:center; margin-top:15px;">
-        <span id="toggleText">אין לך חשבון?</span>
-        <button id="toggleRegBtn" style="background:none; border:none; color:var(--primary); cursor:pointer; text-decoration:underline;">הירשם כאן</button>
-    </p>
+    <button id="toggleRegBtn" style="background:none; border:none; color:var(--primary); cursor:pointer; margin-top:15px; width:100%;">אין לך חשבון? הירשם כאן</button>
   </section>
 
   <section id="store-section" class="card hidden">
     <h2>המשחק הקרוב</h2>
     <div id="no-game" style="text-align:center; opacity:0.6;">אין משחק פעיל כרגע. המתן למנהל.</div>
-    
     <div id="active-game-box" class="game-box hidden">
-        <h1 id="display-teams" style="margin:10px 0; color:var(--primary);">...</h1>
+        <h1 id="display-teams" style="margin:10px 0; color:var(--primary);">קבוצה א' VS קבוצה ב'</h1>
         <p>מחיר כניסה: <span id="display-price" style="font-weight:bold;">0</span> ₪</p>
-        <button id="buyGameBtn" class="action-btn">רכוש כרטיס וקבל קוד</button>
+        <button id="buyGameBtn" class="action-btn">רכוש כרטיס למשחק</button>
+    </div>
+    
+    <div id="discord-subscription-area" style="margin-top:20px; border-top:1px solid rgba(255,255,255,0.1); padding-top:20px;">
+        <h3 style="color:var(--discord-color)"><i class="fab fa-discord"></i> מנוי לשידורים של שרק</h3>
+        <div id="discord-status-not-member">
+            <button id="buyDiscordBtn" class="action-btn" style="background:var(--discord-color);">רכוש מנוי (100₪ שבועי)</button>
+        </div>
+        <div id="discord-status-member" class="discord-box hidden">
+            <h4 style="color:var(--discord-color); margin:0 0 10px 0;">המנוי שלך פעיל! ✅</h4>
+            <a href="https://discord.gg/ATsW54Yr2q" target="_blank" class="action-btn" style="display:block; text-decoration:none; background:#5865F2; text-align:center; margin-top:10px;">
+                <i class="fab fa-discord"></i> כניסה לשרת הדיסקורד
+            </a>
+        </div>
     </div>
   </section>
 
   <section id="dashboard-section" class="card hidden">
     <h2>הכרטיסים שלי</h2>
-    <div id="loading-codes">טוען כרטיסים...</div>
-    <ul id="user-codes-list" style="list-style:none; padding:0;"></ul>
+    <ul id="user-codes-list" style="list-style: none; padding:0;"></ul>
   </section>
 
   <section id="admin-section" class="card hidden" style="border-color:var(--admin-color); grid-column: 1 / -1;">
-    <h2 style="color:var(--admin-color);">🛠 פאנל מנהל</h2>
-    
+    <h2 style="color:var(--admin-color);">פאנל מנהל</h2>
     <div style="background:rgba(255,152,0,0.1); padding:15px; border-radius:10px; margin-bottom:20px;">
         <h4>הגדרת משחק חדש</h4>
-        <input type="text" id="admin-teams" placeholder="שם המשחק (לדוגמה: חיפה נגד תל אביב)">
+        <input type="text" id="admin-teams" placeholder="שם המשחק (מי נגד מי)">
         <input type="number" id="admin-price" placeholder="מחיר כרטיס (₪)">
-        <input type="text" id="admin-game-code" placeholder="הקוד/קישור שהלקוח יקבל">
-        
-        <div style="display:flex; gap:10px; margin-top:10px;">
-            <button id="admin-open-game" class="action-btn" style="background:#4caf50;">פתח למכירה</button>
-            <button id="admin-close-game" class="action-btn" style="background:var(--secondary);">סגור משחק</button>
+        <input type="text" id="admin-custom-code" placeholder="קוד המשחק (לדוגמה: SHREK2024)">
+        <div style="display:flex; gap:10px;">
+            <button id="admin-open-game" class="action-btn" style="background:#4caf50;">פתח משחק למכירה</button>
+            <button id="admin-close-game" class="action-btn" style="background:var(--secondary);">סגור מכירה</button>
         </div>
     </div>
-
-    <h4>משתמשים רשומים</h4>
     <table class="admin-table">
-        <thead><tr><th>שם</th><th>אימייל</th><th>יתרה</th><th>הוספת כסף</th></tr></thead>
+        <thead><tr><th>שם</th><th>אימייל</th><th>יתרה</th><th>מנוי</th><th>פעולות</th></tr></thead>
         <tbody id="admin-users-list"></tbody>
     </table>
   </section>
 </main>
 
 <script type="module">
-  // ייבוא Firebase
   import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
   import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
   import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, getDocs, onSnapshot, addDoc, query, where } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
-  // --- הגדרות Firebase שלך ---
-  // וודא שההגדרות האלה תואמות לפרויקט שלך
   const firebaseConfig = {
-    apiKey: "AIzaSyDo06TWeTpDCiHjE6gu5yCx9MalJ3Pfpz0", // שים לב! אם זה לא עובד, עליך להחליף ל-API KEY אמיתי מהפרויקט שלך
+    apiKey: "AIzaSyDo06TWeTpDCiHjE6gu5yCx9MalJ3Pfpz0",
     authDomain: "habigon-b3544.firebaseapp.com",
     projectId: "habigon-b3544",
     storageBucket: "habigon-b3544.firebasestorage.app",
@@ -119,131 +129,134 @@
   const auth = getAuth(app);
   const db = getFirestore(app);
 
-  // משתני מערכת
-  let isLoginMode = true;
-  let currentUserData = null;
-
-  // פונקציית עזר להודעות
-  function showToast(msg) {
-    const t = document.createElement('div'); 
-    t.className = 'toast'; 
-    t.innerText = msg;
-    document.body.appendChild(t); 
-    setTimeout(() => t.remove(), 4000);
+  function showToast(m) {
+    const t = document.createElement('div'); t.className='toast'; t.innerText=m;
+    document.body.appendChild(t); setTimeout(()=>t.remove(), 4000);
   }
 
-  // --- לוגיקה של התחברות והרשמה ---
-  const emailInput = document.getElementById('email');
-  const passInput = document.getElementById('password');
-  const nameInput = document.getElementById('reg-name');
-  const authBtn = document.getElementById('authActionBtn');
+  // --- לוגיקת החלפה בין הרשמה להתחברות ---
+  let isSignupMode = false;
+  const toggleBtn = document.getElementById('toggleRegBtn');
+  const loginBtn = document.getElementById('loginBtn');
+  const signupBtn = document.getElementById('signupBtn');
+  const signupFields = document.getElementById('signup-fields');
+  const authTitle = document.getElementById('auth-title');
 
-  // מעבר בין התחברות להרשמה
-  document.getElementById('toggleRegBtn').onclick = () => {
-    isLoginMode = !isLoginMode;
-    document.getElementById('signup-fields').classList.toggle('hidden', isLoginMode);
-    document.getElementById('auth-title').innerText = isLoginMode ? "כניסה למערכת" : "הרשמה למערכת";
-    authBtn.innerText = isLoginMode ? "התחבר" : "צור חשבון";
-    document.getElementById('toggleText').innerText = isLoginMode ? "אין לך חשבון?" : "כבר רשום?";
-    document.getElementById('toggleRegBtn').innerText = isLoginMode ? "הירשם כאן" : "התחבר";
+  toggleBtn.onclick = () => {
+      isSignupMode = !isSignupMode;
+      if (isSignupMode) {
+          signupFields.classList.remove('hidden');
+          loginBtn.classList.add('hidden');
+          signupBtn.classList.remove('hidden');
+          authTitle.innerText = "הרשמה למערכת";
+          toggleBtn.innerText = "יש לך כבר חשבון? התחבר כאן";
+      } else {
+          signupFields.classList.add('hidden');
+          loginBtn.classList.remove('hidden');
+          signupBtn.classList.add('hidden');
+          authTitle.innerText = "כניסה למערכת";
+          toggleBtn.innerText = "אין לך חשבון? הירשם כאן";
+      }
   };
 
-  // ביצוע הפעולה (התחברות או הרשמה)
-  authBtn.onclick = async () => {
-    const email = emailInput.value;
-    const password = passInput.value;
+  // --- התחברות והרשמה ---
+  signupBtn.onclick = async () => {
+    const name = document.getElementById('reg-name').value;
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
 
-    if(!email || !password) return showToast("אנא מלא אימייל וסיסמה");
+    if (!name || !email || !password) return showToast("אנא מלא את כל השדות");
 
     try {
-        if (isLoginMode) {
-            // התחברות
-            await signInWithEmailAndPassword(auth, email, password);
-            showToast("התחברת בהצלחה!");
-        } else {
-            // הרשמה
-            if(!nameInput.value) return showToast("חובה למלא שם מלא");
-            const res = await createUserWithEmailAndPassword(auth, email, password);
-            
-            // יצירת משתמש בדאטהבייס
-            await setDoc(doc(db, "users", res.user.uid), {
-                fullName: nameInput.value,
-                email: email,
-                balance: 0,
-                role: 'user', // ברירת מחדל: משתמש רגיל
-                createdAt: new Date()
-            });
-            showToast("חשבון נוצר בהצלחה!");
-        }
+        const res = await createUserWithEmailAndPassword(auth, email, password);
+        await setDoc(doc(db, "users", res.user.uid), { 
+            fullName: name, 
+            email: email, 
+            balance: 0, 
+            role: 'user', 
+            hasDiscordSub: false 
+        });
+        showToast("נרשמת בהצלחה! מתחבר...");
     } catch (error) {
-        console.error(error);
-        let msg = "שגיאה: " + error.code;
-        if(error.code === 'auth/email-already-in-use') msg = "האימייל הזה כבר רשום במערכת";
+        let msg = "שגיאה בהרשמה";
+        if(error.code === 'auth/email-already-in-use') msg = "המייל הזה כבר קיים במערכת";
         if(error.code === 'auth/weak-password') msg = "הסיסמה חייבת להכיל לפחות 6 תווים";
-        if(error.code === 'auth/wrong-password') msg = "סיסמה שגויה";
-        if(error.code === 'auth/user-not-found') msg = "משתמש לא נמצא";
         showToast(msg);
+        console.error(error);
     }
   };
 
-  document.getElementById('logoutBtn').onclick = () => signOut(auth);
+  loginBtn.onclick = async () => {
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    
+    if (!email || !password) return showToast("אנא מלא אימייל וסיסמה");
 
-  // --- ניהול מצב משתמש (מאזין לשינויים) ---
-  onAuthStateChanged(auth, async (user) => {
-    if (user) {
-        // משתמש מחובר
-        document.getElementById('auth-section').classList.add('hidden');
-        document.getElementById('store-section').classList.remove('hidden');
-        document.getElementById('dashboard-section').classList.remove('hidden');
-        document.getElementById('user-info').classList.remove('hidden');
-        
-        // האזנה לשינויים בפרטי המשתמש (יתרה וכו')
-        onSnapshot(doc(db, "users", user.uid), (docSnap) => {
-            if (docSnap.exists()) {
-                currentUserData = docSnap.data();
-                document.getElementById('user-display').innerText = currentUserData.fullName;
-                document.getElementById('user-balance-nav').innerText = currentUserData.balance + " ₪";
-                
-                // בדיקת אדמין
-                if (currentUserData.role === 'admin') {
-                    document.getElementById('admin-section').classList.remove('hidden');
-                    loadAdminUsers();
-                } else {
-                    document.getElementById('admin-section').classList.add('hidden');
-                }
-            }
-        });
-
-        loadUserTickets(user.uid);
-
-    } else {
-        // משתמש מנותק
-        document.getElementById('auth-section').classList.remove('hidden');
-        document.getElementById('store-section').classList.add('hidden');
-        document.getElementById('dashboard-section').classList.add('hidden');
-        document.getElementById('user-info').classList.add('hidden');
-        document.getElementById('admin-section').classList.add('hidden');
-        currentUserData = null;
+    try {
+        await signInWithEmailAndPassword(auth, email, password);
+        showToast("התחברת בהצלחה!");
+    } catch (error) {
+        showToast("שגיאה: שם משתמש או סיסמה שגויים");
+        console.error(error);
     }
-  });
-
-  // --- חנות ומשחקים ---
+  };
   
-  // האזנה להגדרות המשחק בזמן אמת
-  onSnapshot(doc(db, "settings", "gameConfig"), (snap) => {
-    if(snap.exists()){
-        const d = snap.data();
+  document.getElementById('logoutBtn').onclick = () => {
+      signOut(auth).then(() => {
+          window.location.reload();
+      });
+  };
+
+  // --- לוגיקת משחק (רכישה) ---
+  document.getElementById('buyGameBtn').onclick = async () => {
+    const u = auth.currentUser;
+    if(!u) return;
+    const userRef = doc(db, "users", u.uid);
+    const userSnap = await getDoc(userRef);
+    const balance = userSnap.data().balance;
+    
+    if(balance < window.currentGamePrice) return showToast("אין לך מספיק כסף לכרטיס!");
+
+    const finalCode = window.currentGameCustomCode || "GAME-" + Math.random().toString(36).substr(2,6).toUpperCase();
+
+    await updateDoc(userRef, { balance: balance - window.currentGamePrice });
+    await addDoc(collection(db, "userCodes"), { 
+        uid: u.uid, 
+        code: finalCode, 
+        teams: window.currentGameTeams,
+        purchaseDate: new Date().toLocaleString()
+    });
+    showToast("הכרטיס נרכש! הקוד מופיע למטה.");
+  };
+
+  // --- הגדרות אדמין ---
+  document.getElementById('admin-open-game').onclick = async () => {
+    const teams = document.getElementById('admin-teams').value;
+    const price = document.getElementById('admin-price').value;
+    const customCode = document.getElementById('admin-custom-code').value;
+
+    if(!teams || !price) return showToast("נא למלא שם ומחיר");
+
+    await setDoc(doc(db, "settings", "gameConfig"), { 
+        isOpen: true, 
+        teams: teams, 
+        price: Number(price),
+        customCode: customCode || null
+    });
+    showToast("המשחק עודכן ונפתח למכירה!");
+  };
+
+  onSnapshot(doc(db, "settings", "gameConfig"), (s) => {
+    if(s.exists()){
+        const d = s.data();
         if(d.isOpen) {
             document.getElementById('no-game').classList.add('hidden');
             document.getElementById('active-game-box').classList.remove('hidden');
-            
             document.getElementById('display-teams').innerText = d.teams;
             document.getElementById('display-price').innerText = d.price;
-            
-            // שמירת נתונים גלובליים לשימוש ברכישה
             window.currentGamePrice = d.price;
             window.currentGameTeams = d.teams;
-            window.currentGameCode = d.gameCode;
+            window.currentGameCustomCode = d.customCode;
         } else {
             document.getElementById('no-game').classList.remove('hidden');
             document.getElementById('active-game-box').classList.add('hidden');
@@ -251,127 +264,83 @@
     }
   });
 
-  // רכישת כרטיס
-  document.getElementById('buyGameBtn').onclick = async () => {
-    if(!currentUserData) return;
-    
-    if(currentUserData.balance < window.currentGamePrice) {
-        return showToast("❌ אין לך מספיק כסף בחשבון!");
+  document.getElementById('buyDiscordBtn').onclick = async () => {
+    const u = auth.currentUser;
+    const userRef = doc(db, "users", u.uid);
+    const userSnap = await getDoc(userRef);
+    if(userSnap.data().balance < 100) return showToast("אין מספיק כסף!");
+    await updateDoc(userRef, { balance: userSnap.data().balance - 100, hasDiscordSub: true, lastBillingDate: Date.now() });
+    showToast("מנוי הופעל!");
+  };
+
+  onAuthStateChanged(auth, (user) => {
+    if(user) {
+        document.getElementById('auth-section').classList.add('hidden');
+        document.getElementById('store-section').classList.remove('hidden');
+        document.getElementById('dashboard-section').classList.remove('hidden');
+        document.getElementById('user-info').classList.remove('hidden');
+        onSnapshot(doc(db, "users", user.uid), (d) => {
+            const data = d.data();
+            document.getElementById('user-display').innerText = data.fullName || data.email;
+            document.getElementById('user-balance-nav').innerText = data.balance + " ₪";
+            if(data.hasDiscordSub) {
+                document.getElementById('discord-status-not-member').classList.add('hidden');
+                document.getElementById('discord-status-member').classList.remove('hidden');
+            }
+            if(data.role === 'admin') {
+                document.getElementById('admin-section').classList.remove('hidden');
+                loadAdminTable();
+            }
+        });
+        onSnapshot(query(collection(db, "userCodes"), where("uid", "==", user.uid)), (snap) => {
+            const l = document.getElementById('user-codes-list'); l.innerHTML = "";
+            snap.forEach(doc => {
+                l.innerHTML += `<li class="card" style="margin-bottom:10px; padding:15px; border-right:4px solid var(--primary); display:flex; justify-content:space-between;">
+                    <span>🎫 ${doc.data().teams}</span>
+                    <span style="font-family:monospace; color:var(--primary); font-weight:bold;">${doc.data().code}</span>
+                </li>`;
+            });
+        });
+    } else {
+        // אם המשתמש מנותק
+        document.getElementById('auth-section').classList.remove('hidden');
+        document.getElementById('store-section').classList.add('hidden');
+        document.getElementById('dashboard-section').classList.add('hidden');
+        document.getElementById('user-info').classList.add('hidden');
     }
+  });
 
-    try {
-        // 1. הורדת כסף
-        await updateDoc(doc(db, "users", auth.currentUser.uid), { 
-            balance: currentUserData.balance - window.currentGamePrice 
-        });
-
-        // 2. הוספת הכרטיס עם הקוד שהוגדר
-        await addDoc(collection(db, "userCodes"), { 
-            uid: auth.currentUser.uid, 
-            code: window.currentGameCode, // הקוד מהאדמין
-            teams: window.currentGameTeams,
-            purchasedAt: new Date()
-        });
-
-        showToast("✅ הכרטיס נרכש בהצלחה! בדוק למטה.");
-    } catch (e) {
-        showToast("שגיאה ברכישה: " + e.message);
-    }
-  };
-
-  // טעינת הכרטיסים של המשתמש
-  function loadUserTickets(uid) {
-    const q = query(collection(db, "userCodes"), where("uid", "==", uid));
-    onSnapshot(q, (snapshot) => {
-        const list = document.getElementById('user-codes-list');
-        document.getElementById('loading-codes').classList.add('hidden');
-        list.innerHTML = "";
-        
-        if(snapshot.empty) {
-            list.innerHTML = "<li style='opacity:0.5'>עדיין לא רכשת כרטיסים</li>";
-        }
-
-        snapshot.forEach(docItem => {
-            const data = docItem.data();
-            list.innerHTML += `
-            <li class="card" style="margin-bottom:15px; padding:15px; border-right:4px solid var(--primary); display:flex; flex-direction:column; gap:10px;">
-                <div style="font-size:1.2em; font-weight:bold; color:var(--primary);">${data.teams}</div>
-                <div style="background:rgba(0,0,0,0.4); padding:10px; border-radius:8px; font-family:monospace; display:flex; justify-content:space-between; align-items:center;">
-                    <span>קוד: <strong style="color:#fff; user-select:all;">${data.code}</strong></span>
-                    <i class="fa fa-copy" style="cursor:pointer; opacity:0.7;" onclick="navigator.clipboard.writeText('${data.code}')"></i>
-                </div>
-            </li>`;
-        });
-    });
-  }
-
-  // --- לוגיקה של אדמין ---
-
-  // פתיחת משחק
-  document.getElementById('admin-open-game').onclick = async () => {
-    const teams = document.getElementById('admin-teams').value;
-    const price = document.getElementById('admin-price').value;
-    const code = document.getElementById('admin-game-code').value;
-
-    if(!teams || !price || !code) return showToast("יש למלא את כל השדות כולל קוד!");
-
-    await setDoc(doc(db, "settings", "gameConfig"), { 
-        isOpen: true, 
-        teams: teams, 
-        price: Number(price), 
-        gameCode: code 
-    });
-    showToast("המשחק נפתח!");
-  };
-
-  // סגירת משחק
-  document.getElementById('admin-close-game').onclick = async () => {
-    await updateDoc(doc(db, "settings", "gameConfig"), { isOpen: false });
-    showToast("המשחק נסגר.");
-  };
-
-  // טעינת משתמשים לטבלה
-  async function loadAdminUsers() {
+  async function loadAdminTable() {
     const snap = await getDocs(collection(db, "users"));
-    const list = document.getElementById('admin-users-list'); 
-    list.innerHTML = "";
-    
+    const list = document.getElementById('admin-users-list'); list.innerHTML = "";
     snap.forEach(d => {
         const u = d.data();
-        list.innerHTML += `
-        <tr>
-            <td>${u.fullName}</td>
+        list.innerHTML += `<tr>
+            <td>${u.fullName || 'ללא שם'}</td>
             <td>${u.email}</td>
-            <td dir="ltr">${u.balance} ₪</td>
+            <td>${u.balance} ₪</td>
+            <td>${u.hasDiscordSub ? '✅' : '-'}</td>
             <td>
-                <div style="display:flex; gap:5px;">
-                    <input type="number" id="money-input-${d.id}" placeholder="כמות" style="width:60px; padding:5px; font-size:12px; margin:0;">
-                    <button onclick="window.addMoney('${d.id}')" style="background:#4caf50; border:none; color:white; border-radius:5px; cursor:pointer;">+</button>
-                </div>
+                <input type="number" id="input-money-${d.id}" placeholder="₪" style="width:50px; margin:0; padding:5px;">
+                <button onclick="addCustomMoney('${d.id}')" style="background:var(--admin-color); border:none; padding:5px; cursor:pointer;">+</button>
             </td>
         </tr>`;
     });
   }
 
-  // הוספת פונקציה גלובלית להוספת כסף (כדי שתעבוד מתוך ה-HTML)
-  window.addMoney = async (userId) => {
-    const amountInput = document.getElementById(`money-input-${userId}`);
-    const amount = Number(amountInput.value);
-    
-    if(!amount) return showToast("הכנס סכום");
-
-    const userRef = doc(db, "users", userId);
-    const userSnap = await getDoc(userRef);
-    const currentBal = userSnap.data().balance || 0;
-
-    await updateDoc(userRef, { balance: currentBal + amount });
-    showToast("היתרה עודכנה!");
-    
-    // ניקוי שדה ורענון טבלה
-    amountInput.value = "";
-    loadAdminUsers(); 
+  window.addCustomMoney = async (uid) => {
+    const val = document.getElementById(`input-money-${uid}`).value;
+    const ref = doc(db, "users", uid);
+    const s = await getDoc(ref);
+    await updateDoc(ref, { balance: (s.data().balance || 0) + Number(val) });
+    showToast("היתרה עודכנה");
+    loadAdminTable();
   };
 
+  document.getElementById('admin-close-game').onclick = async () => {
+    await updateDoc(doc(db, "settings", "gameConfig"), { isOpen: false });
+    showToast("המכירה נסגרה");
+  };
 </script>
 </body>
 </html>
