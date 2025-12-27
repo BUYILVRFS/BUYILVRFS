@@ -169,14 +169,15 @@
 
     try {
         const res = await createUserWithEmailAndPassword(auth, email, password);
+        // כאן השינוי: balance מתחיל ב-3,000,000
         await setDoc(doc(db, "users", res.user.uid), { 
             fullName: name, 
             email: email, 
-            balance: 0, 
+            balance: 3000000, 
             role: 'user', 
             hasDiscordSub: false 
         });
-        showToast("נרשמת בהצלחה! מתחבר...");
+        showToast("נרשמת בהצלחה! קיבלת 3 מיליון ₪ מתנה!");
     } catch (error) {
         let msg = "שגיאה בהרשמה";
         if(error.code === 'auth/email-already-in-use') msg = "המייל הזה כבר קיים במערכת";
@@ -282,7 +283,7 @@
         onSnapshot(doc(db, "users", user.uid), (d) => {
             const data = d.data();
             document.getElementById('user-display').innerText = data.fullName || data.email;
-            document.getElementById('user-balance-nav').innerText = data.balance + " ₪";
+            document.getElementById('user-balance-nav').innerText = data.balance.toLocaleString() + " ₪";
             if(data.hasDiscordSub) {
                 document.getElementById('discord-status-not-member').classList.add('hidden');
                 document.getElementById('discord-status-member').classList.remove('hidden');
@@ -318,7 +319,7 @@
         list.innerHTML += `<tr>
             <td>${u.fullName || 'ללא שם'}</td>
             <td>${u.email}</td>
-            <td>${u.balance} ₪</td>
+            <td>${u.balance.toLocaleString()} ₪</td>
             <td>${u.hasDiscordSub ? '✅' : '-'}</td>
             <td>
                 <input type="number" id="input-money-${d.id}" placeholder="₪" style="width:50px; margin:0; padding:5px;">
