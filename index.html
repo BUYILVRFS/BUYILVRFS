@@ -14,7 +14,7 @@
   }
   * { box-sizing: border-box; outline: none; }
   body { font-family: 'Heebo', sans-serif; background-color: var(--bg-dark); color: var(--text-main); margin: 0; direction: rtl; }
-  
+   
   nav { display: flex; justify-content: space-between; padding: 15px 40px; background: rgba(10, 10, 18, 0.8); backdrop-filter: blur(10px); border-bottom: 1px solid rgba(255,255,255,0.1); }
   .logo { font-size: 24px; font-weight: 900; color: var(--primary); }
 
@@ -25,15 +25,15 @@
   input { width: 100%; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); padding: 12px; border-radius: 10px; color: #fff; margin-bottom: 10px; }
   .action-btn { width: 100%; padding: 12px; border-radius: 10px; border: none; background: linear-gradient(45deg, var(--secondary), #ff4d88); color: white; font-weight: bold; cursor: pointer; transition: 0.3s; }
   .action-btn:hover { opacity: 0.8; transform: translateY(-2px); }
-  
+   
   .admin-table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.9rem; }
   .admin-table th, .admin-table td { padding: 10px; text-align: right; border-bottom: 1px solid rgba(255,255,255,0.1); }
-  
+   
   .game-box { background: linear-gradient(135deg, #1a1a2e, #16213e); padding: 20px; border-radius: 15px; text-align: center; border: 2px solid var(--primary); }
   .discord-box { background: rgba(88, 101, 242, 0.15); border: 2px solid var(--discord-color); padding: 20px; border-radius: 15px; text-align: center; margin-top: 20px; animation: fadeIn 0.5s ease; }
-  
+   
   @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-  
+   
   .toast { position: fixed; bottom: 20px; left: 20px; background: #1a1a2e; color: #fff; padding: 15px; border-radius: 10px; border-right: 4px solid var(--primary); z-index: 2000; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
 </style>
 </head>
@@ -50,17 +50,17 @@
 <main>
   <section id="auth-section" class="card">
     <h2 id="auth-title">כניסה למערכת</h2>
-    
+     
     <div id="signup-fields" class="hidden">
         <input type="text" id="reg-name" placeholder="שם מלא (לדוגמה: יוסי כהן)">
     </div>
-    
+     
     <input type="email" id="email" placeholder="אימייל">
     <input type="password" id="password" placeholder="סיסמה (מינימום 6 תווים)">
-    
+     
     <button id="loginBtn" class="action-btn">התחבר</button>
     <button id="signupBtn" class="action-btn hidden" style="background:var(--primary); color:#000;">צור חשבון חדש</button>
-    
+     
     <button id="toggleRegBtn" style="background:none; border:none; color:var(--primary); cursor:pointer; margin-top:15px; width:100%;">אין לך חשבון? הירשם כאן</button>
   </section>
 
@@ -72,11 +72,11 @@
         <p>מחיר כניסה: <span id="display-price" style="font-weight:bold;">0</span> ₪</p>
         <button id="buyGameBtn" class="action-btn">רכוש כרטיס למשחק</button>
     </div>
-    
+     
     <div id="discord-subscription-area" style="margin-top:20px; border-top:1px solid rgba(255,255,255,0.1); padding-top:20px;">
         <h3 style="color:var(--discord-color)"><i class="fab fa-discord"></i> מנוי לשידורים של שרק</h3>
         <div id="discord-status-not-member">
-            <button id="buyDiscordBtn" class="action-btn" style="background:var(--discord-color);">רכוש מנוי (100₪ שבועי)</button>
+            <button id="buyDiscordBtn" class="action-btn" style="background:var(--discord-color);">רכוש מנוי (500,000₪)</button>
         </div>
         <div id="discord-status-member" class="discord-box hidden">
             <h4 style="color:var(--discord-color); margin:0 0 10px 0;">המנוי שלך פעיל! ✅</h4>
@@ -169,15 +169,15 @@
 
     try {
         const res = await createUserWithEmailAndPassword(auth, email, password);
-        // כאן השינוי: balance מתחיל ב-3,000,000
+        // --- שינוי 1: יתרה התחלתית שונתה ל-2 מיליון ---
         await setDoc(doc(db, "users", res.user.uid), { 
             fullName: name, 
             email: email, 
-            balance: 3000000, 
+            balance: 2000000, 
             role: 'user', 
             hasDiscordSub: false 
         });
-        showToast("נרשמת בהצלחה! קיבלת 3 מיליון ₪ מתנה!");
+        showToast("נרשמת בהצלחה! קיבלת 2 מיליון ₪ מתנה!");
     } catch (error) {
         let msg = "שגיאה בהרשמה";
         if(error.code === 'auth/email-already-in-use') msg = "המייל הזה כבר קיים במערכת";
@@ -190,7 +190,7 @@
   loginBtn.onclick = async () => {
     const email = document.getElementById('email').value;
     const password = document.getElementById('password').value;
-    
+     
     if (!email || !password) return showToast("אנא מלא אימייל וסיסמה");
 
     try {
@@ -201,7 +201,7 @@
         console.error(error);
     }
   };
-  
+   
   document.getElementById('logoutBtn').onclick = () => {
       signOut(auth).then(() => {
           window.location.reload();
@@ -215,7 +215,7 @@
     const userRef = doc(db, "users", u.uid);
     const userSnap = await getDoc(userRef);
     const balance = userSnap.data().balance;
-    
+     
     if(balance < window.currentGamePrice) return showToast("אין לך מספיק כסף לכרטיס!");
 
     const finalCode = window.currentGameCustomCode || "GAME-" + Math.random().toString(36).substr(2,6).toUpperCase();
@@ -269,8 +269,17 @@
     const u = auth.currentUser;
     const userRef = doc(db, "users", u.uid);
     const userSnap = await getDoc(userRef);
-    if(userSnap.data().balance < 100) return showToast("אין מספיק כסף!");
-    await updateDoc(userRef, { balance: userSnap.data().balance - 100, hasDiscordSub: true, lastBillingDate: Date.now() });
+    
+    // --- שינוי 2: מחיר מנוי עלה ל-500,000 ---
+    const subscriptionPrice = 500000;
+
+    if(userSnap.data().balance < subscriptionPrice) return showToast("אין מספיק כסף! צריך חצי מיליון");
+    
+    await updateDoc(userRef, { 
+        balance: userSnap.data().balance - subscriptionPrice, 
+        hasDiscordSub: true, 
+        lastBillingDate: Date.now() 
+    });
     showToast("מנוי הופעל!");
   };
 
