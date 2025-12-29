@@ -55,10 +55,10 @@
     <h2 id="auth-title">כניסה למערכת</h2>
       
     <div id="signup-fields" class="hidden">
-        <input type="text" id="reg-name" placeholder="שם מלא (לדוגמה: יוסי כהן)">
+        <input type="text" id="reg-name" placeholder="שם מלא לתצוגה (לדוגמה: יוסי כהן)">
     </div>
       
-    <input type="email" id="email" placeholder="אימייל">
+    <input type="text" id="username-input" placeholder="שם משתמש (באנגלית/מספרים בלבד)">
     <input type="password" id="password" placeholder="סיסמה (מינימום 6 תווים)">
       
     <button id="loginBtn" class="action-btn">התחבר</button>
@@ -105,7 +105,6 @@
         <h4>הגדרת משחק חדש</h4>
         <input type="text" id="admin-teams" placeholder="שם המשחק (מי נגד מי)">
         <input type="number" id="admin-price" placeholder="מחיר כרטיס (₪)">
-        
         <input type="number" id="admin-max-tickets" placeholder="כמות כרטיסים למכירה (למשל: 100)">
 
         <label style="font-size:0.8rem; color:gray;">שעת המשחק:</label>
@@ -118,7 +117,7 @@
         </div>
     </div>
     <table class="admin-table">
-        <thead><tr><th>שם</th><th>אימייל</th><th>יתרה</th><th>מנוי</th><th>פעולות</th></tr></thead>
+        <thead><tr><th>שם</th><th>שם משתמש</th><th>יתרה</th><th>מנוי</th><th>פעולות</th></tr></thead>
         <tbody id="admin-users-list"></tbody>
     </table>
   </section>
@@ -172,19 +171,29 @@
       }
   };
 
-  // --- התחברות והרשמה ---
+  // פונקציית עזר להמרת שם משתמש לאימייל דמה
+  const getFakeEmail = (username) => `${username.trim().toLowerCase()}@habigon.game`;
+
+  // --- התחברות והרשמה עם שם משתמש ---
   signupBtn.onclick = async () => {
-    const name = document.getElementById('reg-name').value;
-    const email = document.getElementById('email').value;
+    const fullName = document.getElementById('reg-name').value;
+    const username = document.getElementById('username-input').value; // שם משתמש
     const password = document.getElementById('password').value;
 
-    if (!name || !email || !password) return showToast("אנא מלא את כל השדות");
+    if (!fullName || !username || !password) return showToast("אנא מלא את כל השדות");
+    
+    // בדיקת תקינות בסיסית לשם משתמש (למנוע רווחים וכו')
+    if (/[^a-zA-Z0-9]/.test(username)) {
+        return showToast("שם משתמש חייב להכיל אנגלית ומספרים בלבד");
+    }
 
     try {
-        const res = await createUserWithEmailAndPassword(auth, email, password);
+        // יצירת המשתמש עם אימייל פיקטיבי
+        const res = await createUserWithEmailAndPassword(auth, getFakeEmail(username), password);
         await setDoc(doc(db, "users", res.user.uid), { 
-            fullName: name, 
-            email: email, 
+            fullName: fullName, 
+            username: username, // שמירת שם המשתמש הנקי
+            email: getFakeEmail(username), // שמירת האימייל הטכני
             balance: 2000000, 
             role: 'user', 
             hasDiscordSub: false 
@@ -192,7 +201,7 @@
         showToast("נרשמת בהצלחה! קיבלת 2 מיליון ₪ מתנה!");
     } catch (error) {
         let msg = "שגיאה בהרשמה";
-        if(error.code === 'auth/email-already-in-use') msg = "המייל הזה כבר קיים במערכת";
+        if(error.code === 'auth/email-already-in-use') msg = "שם המשתמש הזה תפוס";
         if(error.code === 'auth/weak-password') msg = "הסיסמה חייבת להכיל לפחות 6 תווים";
         showToast(msg);
         console.error(error);
@@ -200,13 +209,14 @@
   };
 
   loginBtn.onclick = async () => {
-    const email = document.getElementById('email').value;
+    const username = document.getElementById('username-input').value;
     const password = document.getElementById('password').value;
       
-    if (!email || !password) return showToast("אנא מלא אימייל וסיסמה");
+    if (!username || !password) return showToast("אנא מלא שם משתמש וסיסמה");
 
     try {
-        await signInWithEmailAndPassword(auth, email, password);
+        // התחברות באמצעות המרת שם המשתמש לאימייל הפיקטיבי
+        await signInWithEmailAndPassword(auth, getFakeEmail(username), password);
         showToast("התחברת בהצלחה!");
     } catch (error) {
         showToast("שגיאה: שם משתמש או סיסמה שגויים");
@@ -225,23 +235,20 @@
     const u = auth.currentUser;
     if(!u) return;
 
-    // 1. קבלת נתונים עדכניים על המשחק (כדי לוודא מלאי)
     const gameConfigRef = doc(db, "settings", "gameConfig");
     const gameSnap = await getDoc(gameConfigRef);
     if (!gameSnap.exists()) return;
     
     const gameData = gameSnap.data();
 
-    // בדיקת מלאי
     if (gameData.soldTickets >= gameData.maxTickets) {
         return showToast("שגיאה: אזל המלאי למשחק זה!");
     }
 
-    // 2. בדיקה אם המשתמש כבר קנה כרטיס למשחק הזה
     const q = query(
         collection(db, "userCodes"), 
         where("uid", "==", u.uid),
-        where("teams", "==", gameData.teams) // בודקים לפי שם המשחק
+        where("teams", "==", gameData.teams)
     );
     const querySnapshot = await getDocs(q);
     
@@ -249,7 +256,6 @@
         return showToast("שגיאה: ניתן לרכוש רק כרטיס אחד למשחק!");
     }
 
-    // 3. ביצוע הרכישה
     const userRef = doc(db, "users", u.uid);
     const userSnap = await getDoc(userRef);
     const balance = userSnap.data().balance;
@@ -258,10 +264,8 @@
 
     const finalCode = gameData.customCode || "GAME-" + Math.random().toString(36).substr(2,6).toUpperCase();
 
-    // עדכון יתרת המשתמש
     await updateDoc(userRef, { balance: balance - gameData.price });
     
-    // יצירת הכרטיס
     await addDoc(collection(db, "userCodes"), { 
         uid: u.uid, 
         code: finalCode, 
@@ -270,7 +274,6 @@
         purchaseDate: new Date().toLocaleString()
     });
 
-    // עדכון כמות הכרטיסים שנמכרו (הורדה מהמלאי בפועל)
     await updateDoc(gameConfigRef, {
         soldTickets: increment(1)
     });
@@ -282,18 +285,18 @@
   document.getElementById('admin-open-game').onclick = async () => {
     const teams = document.getElementById('admin-teams').value;
     const price = document.getElementById('admin-price').value;
-    const maxTickets = document.getElementById('admin-max-tickets').value; // כמות מקסימלית
+    const maxTickets = document.getElementById('admin-max-tickets').value;
     const time = document.getElementById('admin-time').value;
     const customCode = document.getElementById('admin-custom-code').value;
 
-    if(!teams || !price || !time || !maxTickets) return showToast("נא למלא את כל הפרטים (כולל כמות כרטיסים)");
+    if(!teams || !price || !time || !maxTickets) return showToast("נא למלא את כל הפרטים");
 
     await setDoc(doc(db, "settings", "gameConfig"), { 
         isOpen: true, 
         teams: teams, 
         price: Number(price),
         maxTickets: Number(maxTickets),
-        soldTickets: 0, // איפוס מונה המכירות
+        soldTickets: 0, 
         time: time,
         customCode: customCode || null
     });
@@ -310,7 +313,6 @@
             document.getElementById('display-price').innerText = d.price;
             document.getElementById('display-time').innerText = d.time;
             
-            // חישוב והצגת מלאי
             const left = d.maxTickets - (d.soldTickets || 0);
             const stockDisplay = document.getElementById('display-stock');
             const buyBtn = document.getElementById('buyGameBtn');
@@ -360,7 +362,7 @@
         document.getElementById('user-info').classList.remove('hidden');
         onSnapshot(doc(db, "users", user.uid), (d) => {
             const data = d.data();
-            document.getElementById('user-display').innerText = data.fullName || data.email;
+            document.getElementById('user-display').innerText = data.fullName || data.username;
             document.getElementById('user-balance-nav').innerText = data.balance.toLocaleString() + " ₪";
             if(data.hasDiscordSub) {
                 document.getElementById('discord-status-not-member').classList.add('hidden');
@@ -398,14 +400,14 @@
     snap.forEach(d => {
         const u = d.data();
         
-        let emailDisplay = u.email;
+        let usernameDisplay = u.username || '---';
         if(u.role === 'admin') {
-            emailDisplay = '<span style="color:#777;">****** (חסוי - מנהל)</span>';
+            usernameDisplay = '<span style="color:#777;">(חסוי - מנהל)</span>';
         }
 
         list.innerHTML += `<tr>
             <td>${u.fullName || 'ללא שם'}</td>
-            <td>${emailDisplay}</td>
+            <td style="direction:ltr; text-align:right;">${usernameDisplay}</td>
             <td>${u.balance.toLocaleString()} ₪</td>
             <td>${u.hasDiscordSub ? '✅' : '-'}</td>
             <td>
