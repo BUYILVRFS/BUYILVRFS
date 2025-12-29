@@ -14,7 +14,7 @@
   }
   * { box-sizing: border-box; outline: none; }
   body { font-family: 'Heebo', sans-serif; background-color: var(--bg-dark); color: var(--text-main); margin: 0; direction: rtl; }
-   
+    
   nav { display: flex; justify-content: space-between; padding: 15px 40px; background: rgba(10, 10, 18, 0.8); backdrop-filter: blur(10px); border-bottom: 1px solid rgba(255,255,255,0.1); }
   .logo { font-size: 24px; font-weight: 900; color: var(--primary); }
 
@@ -23,17 +23,20 @@
   .hidden { display: none !important; }
 
   input { width: 100%; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); padding: 12px; border-radius: 10px; color: #fff; margin-bottom: 10px; }
+  input[type="time"]::-webkit-calendar-picker-indicator { filter: invert(1); cursor: pointer; }
+  
   .action-btn { width: 100%; padding: 12px; border-radius: 10px; border: none; background: linear-gradient(45deg, var(--secondary), #ff4d88); color: white; font-weight: bold; cursor: pointer; transition: 0.3s; }
   .action-btn:hover { opacity: 0.8; transform: translateY(-2px); }
-   
+  .action-btn:disabled { background: #555; cursor: not-allowed; opacity: 0.5; transform: none; }
+    
   .admin-table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.9rem; }
   .admin-table th, .admin-table td { padding: 10px; text-align: right; border-bottom: 1px solid rgba(255,255,255,0.1); }
-   
+    
   .game-box { background: linear-gradient(135deg, #1a1a2e, #16213e); padding: 20px; border-radius: 15px; text-align: center; border: 2px solid var(--primary); }
   .discord-box { background: rgba(88, 101, 242, 0.15); border: 2px solid var(--discord-color); padding: 20px; border-radius: 15px; text-align: center; margin-top: 20px; animation: fadeIn 0.5s ease; }
-   
+    
   @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-   
+    
   .toast { position: fixed; bottom: 20px; left: 20px; background: #1a1a2e; color: #fff; padding: 15px; border-radius: 10px; border-right: 4px solid var(--primary); z-index: 2000; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
 </style>
 </head>
@@ -50,17 +53,17 @@
 <main>
   <section id="auth-section" class="card">
     <h2 id="auth-title">כניסה למערכת</h2>
-     
+      
     <div id="signup-fields" class="hidden">
-        <input type="text" id="reg-name" placeholder="השם שלך לתצוגה (לדוגמה: יוסי המלך)">
+        <input type="text" id="reg-name" placeholder="שם מלא (לדוגמה: יוסי כהן)">
     </div>
-     
-    <input type="text" id="username" placeholder="שם משתמש (באנגלית, ללא רווחים)">
+      
+    <input type="email" id="email" placeholder="אימייל">
     <input type="password" id="password" placeholder="סיסמה (מינימום 6 תווים)">
-     
+      
     <button id="loginBtn" class="action-btn">התחבר</button>
     <button id="signupBtn" class="action-btn hidden" style="background:var(--primary); color:#000;">צור חשבון חדש</button>
-     
+      
     <button id="toggleRegBtn" style="background:none; border:none; color:var(--primary); cursor:pointer; margin-top:15px; width:100%;">אין לך חשבון? הירשם כאן</button>
   </section>
 
@@ -69,10 +72,14 @@
     <div id="no-game" style="text-align:center; opacity:0.6;">אין משחק פעיל כרגע. המתן למנהל.</div>
     <div id="active-game-box" class="game-box hidden">
         <h1 id="display-teams" style="margin:10px 0; color:var(--primary);">קבוצה א' VS קבוצה ב'</h1>
+        <p style="font-size: 1.1rem;">⏰ שעת המשחק: <span id="display-time" style="font-weight:bold; color:var(--primary);">--:--</span></p>
+        
+        <p style="font-size: 0.9rem; color: #aaa;">כרטיסים שנותרו: <span id="display-stock" style="color:#fff; font-weight:bold;">--</span></p>
+
         <p>מחיר כניסה: <span id="display-price" style="font-weight:bold;">0</span> ₪</p>
         <button id="buyGameBtn" class="action-btn">רכוש כרטיס למשחק</button>
     </div>
-     
+      
     <div id="discord-subscription-area" style="margin-top:20px; border-top:1px solid rgba(255,255,255,0.1); padding-top:20px;">
         <h3 style="color:var(--discord-color)"><i class="fab fa-discord"></i> מנוי לשידורים של שרק</h3>
         <div id="discord-status-not-member">
@@ -98,6 +105,12 @@
         <h4>הגדרת משחק חדש</h4>
         <input type="text" id="admin-teams" placeholder="שם המשחק (מי נגד מי)">
         <input type="number" id="admin-price" placeholder="מחיר כרטיס (₪)">
+        
+        <input type="number" id="admin-max-tickets" placeholder="כמות כרטיסים למכירה (למשל: 100)">
+
+        <label style="font-size:0.8rem; color:gray;">שעת המשחק:</label>
+        <input type="time" id="admin-time" style="margin-top:5px;">
+        
         <input type="text" id="admin-custom-code" placeholder="קוד המשחק (לדוגמה: SHREK2024)">
         <div style="display:flex; gap:10px;">
             <button id="admin-open-game" class="action-btn" style="background:#4caf50;">פתח משחק למכירה</button>
@@ -105,7 +118,7 @@
         </div>
     </div>
     <table class="admin-table">
-        <thead><tr><th>שם משתמש/כינוי</th><th>יתרה</th><th>מנוי</th><th>פעולות</th></tr></thead>
+        <thead><tr><th>שם</th><th>אימייל</th><th>יתרה</th><th>מנוי</th><th>פעולות</th></tr></thead>
         <tbody id="admin-users-list"></tbody>
     </table>
   </section>
@@ -114,7 +127,7 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
   import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
-  import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, getDocs, onSnapshot, addDoc, query, where } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+  import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, getDocs, onSnapshot, addDoc, query, where, increment } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyDo06TWeTpDCiHjE6gu5yCx9MalJ3Pfpz0",
@@ -133,9 +146,6 @@
     const t = document.createElement('div'); t.className='toast'; t.innerText=m;
     document.body.appendChild(t); setTimeout(()=>t.remove(), 4000);
   }
-
-  // --- עזר: יצירת אימייל פיקטיבי ---
-  const createFakeEmail = (username) => `${username.trim()}@habigon.com`;
 
   // --- לוגיקת החלפה בין הרשמה להתחברות ---
   let isSignupMode = false;
@@ -164,52 +174,46 @@
 
   // --- התחברות והרשמה ---
   signupBtn.onclick = async () => {
-    const displayName = document.getElementById('reg-name').value;
-    const username = document.getElementById('username').value;
+    const name = document.getElementById('reg-name').value;
+    const email = document.getElementById('email').value;
     const password = document.getElementById('password').value;
 
-    if (!displayName || !username || !password) return showToast("אנא מלא את כל השדות");
-
-    const fakeEmail = createFakeEmail(username);
+    if (!name || !email || !password) return showToast("אנא מלא את כל השדות");
 
     try {
-        const res = await createUserWithEmailAndPassword(auth, fakeEmail, password);
+        const res = await createUserWithEmailAndPassword(auth, email, password);
         await setDoc(doc(db, "users", res.user.uid), { 
-            fullName: displayName, 
-            username: username, // שומרים את השם משתמש המקורי
-            email: fakeEmail, 
-            balance: 2000000, // התחלה עם 2 מיליון
+            fullName: name, 
+            email: email, 
+            balance: 2000000, 
             role: 'user', 
             hasDiscordSub: false 
         });
         showToast("נרשמת בהצלחה! קיבלת 2 מיליון ₪ מתנה!");
     } catch (error) {
         let msg = "שגיאה בהרשמה";
-        if(error.code === 'auth/email-already-in-use') msg = "שם המשתמש הזה תפוס";
+        if(error.code === 'auth/email-already-in-use') msg = "המייל הזה כבר קיים במערכת";
         if(error.code === 'auth/weak-password') msg = "הסיסמה חייבת להכיל לפחות 6 תווים";
-        if(error.code === 'auth/invalid-email') msg = "שם המשתמש חייב להיות באנגלית וללא רווחים";
         showToast(msg);
         console.error(error);
     }
   };
 
   loginBtn.onclick = async () => {
-    const username = document.getElementById('username').value;
+    const email = document.getElementById('email').value;
     const password = document.getElementById('password').value;
-     
-    if (!username || !password) return showToast("אנא מלא שם משתמש וסיסמה");
-
-    const fakeEmail = createFakeEmail(username);
+      
+    if (!email || !password) return showToast("אנא מלא אימייל וסיסמה");
 
     try {
-        await signInWithEmailAndPassword(auth, fakeEmail, password);
+        await signInWithEmailAndPassword(auth, email, password);
         showToast("התחברת בהצלחה!");
     } catch (error) {
         showToast("שגיאה: שם משתמש או סיסמה שגויים");
         console.error(error);
     }
   };
-   
+    
   document.getElementById('logoutBtn').onclick = () => {
       signOut(auth).then(() => {
           window.location.reload();
@@ -220,36 +224,77 @@
   document.getElementById('buyGameBtn').onclick = async () => {
     const u = auth.currentUser;
     if(!u) return;
+
+    // 1. קבלת נתונים עדכניים על המשחק (כדי לוודא מלאי)
+    const gameConfigRef = doc(db, "settings", "gameConfig");
+    const gameSnap = await getDoc(gameConfigRef);
+    if (!gameSnap.exists()) return;
+    
+    const gameData = gameSnap.data();
+
+    // בדיקת מלאי
+    if (gameData.soldTickets >= gameData.maxTickets) {
+        return showToast("שגיאה: אזל המלאי למשחק זה!");
+    }
+
+    // 2. בדיקה אם המשתמש כבר קנה כרטיס למשחק הזה
+    const q = query(
+        collection(db, "userCodes"), 
+        where("uid", "==", u.uid),
+        where("teams", "==", gameData.teams) // בודקים לפי שם המשחק
+    );
+    const querySnapshot = await getDocs(q);
+    
+    if (!querySnapshot.empty) {
+        return showToast("שגיאה: ניתן לרכוש רק כרטיס אחד למשחק!");
+    }
+
+    // 3. ביצוע הרכישה
     const userRef = doc(db, "users", u.uid);
     const userSnap = await getDoc(userRef);
     const balance = userSnap.data().balance;
-     
-    if(balance < window.currentGamePrice) return showToast("אין לך מספיק כסף לכרטיס!");
+      
+    if(balance < gameData.price) return showToast("אין לך מספיק כסף לכרטיס!");
 
-    const finalCode = window.currentGameCustomCode || "GAME-" + Math.random().toString(36).substr(2,6).toUpperCase();
+    const finalCode = gameData.customCode || "GAME-" + Math.random().toString(36).substr(2,6).toUpperCase();
 
-    await updateDoc(userRef, { balance: balance - window.currentGamePrice });
+    // עדכון יתרת המשתמש
+    await updateDoc(userRef, { balance: balance - gameData.price });
+    
+    // יצירת הכרטיס
     await addDoc(collection(db, "userCodes"), { 
         uid: u.uid, 
         code: finalCode, 
-        teams: window.currentGameTeams,
+        teams: gameData.teams,
+        time: gameData.time,
         purchaseDate: new Date().toLocaleString()
     });
-    showToast("הכרטיס נרכש! הקוד מופיע למטה.");
+
+    // עדכון כמות הכרטיסים שנמכרו (הורדה מהמלאי בפועל)
+    await updateDoc(gameConfigRef, {
+        soldTickets: increment(1)
+    });
+
+    showToast("הכרטיס נרכש בהצלחה!");
   };
 
   // --- הגדרות אדמין ---
   document.getElementById('admin-open-game').onclick = async () => {
     const teams = document.getElementById('admin-teams').value;
     const price = document.getElementById('admin-price').value;
+    const maxTickets = document.getElementById('admin-max-tickets').value; // כמות מקסימלית
+    const time = document.getElementById('admin-time').value;
     const customCode = document.getElementById('admin-custom-code').value;
 
-    if(!teams || !price) return showToast("נא למלא שם ומחיר");
+    if(!teams || !price || !time || !maxTickets) return showToast("נא למלא את כל הפרטים (כולל כמות כרטיסים)");
 
     await setDoc(doc(db, "settings", "gameConfig"), { 
         isOpen: true, 
         teams: teams, 
         price: Number(price),
+        maxTickets: Number(maxTickets),
+        soldTickets: 0, // איפוס מונה המכירות
+        time: time,
         customCode: customCode || null
     });
     showToast("המשחק עודכן ונפתח למכירה!");
@@ -263,9 +308,26 @@
             document.getElementById('active-game-box').classList.remove('hidden');
             document.getElementById('display-teams').innerText = d.teams;
             document.getElementById('display-price').innerText = d.price;
+            document.getElementById('display-time').innerText = d.time;
+            
+            // חישוב והצגת מלאי
+            const left = d.maxTickets - (d.soldTickets || 0);
+            const stockDisplay = document.getElementById('display-stock');
+            const buyBtn = document.getElementById('buyGameBtn');
+
+            if (left <= 0) {
+                stockDisplay.innerText = "אזל המלאי!";
+                stockDisplay.style.color = "red";
+                buyBtn.innerText = "אזל המלאי ❌";
+                buyBtn.disabled = true;
+            } else {
+                stockDisplay.innerText = left;
+                stockDisplay.style.color = "#00f2ea";
+                buyBtn.innerText = "רכוש כרטיס למשחק";
+                buyBtn.disabled = false;
+            }
+            
             window.currentGamePrice = d.price;
-            window.currentGameTeams = d.teams;
-            window.currentGameCustomCode = d.customCode;
         } else {
             document.getElementById('no-game').classList.remove('hidden');
             document.getElementById('active-game-box').classList.add('hidden');
@@ -278,7 +340,6 @@
     const userRef = doc(db, "users", u.uid);
     const userSnap = await getDoc(userRef);
     
-    // עלות מנוי: 500,000
     const subscriptionPrice = 500000;
 
     if(userSnap.data().balance < subscriptionPrice) return showToast("אין מספיק כסף! צריך חצי מיליון");
@@ -299,8 +360,7 @@
         document.getElementById('user-info').classList.remove('hidden');
         onSnapshot(doc(db, "users", user.uid), (d) => {
             const data = d.data();
-            // מציגים את השם המלא או את שם המשתמש
-            document.getElementById('user-display').innerText = data.fullName || data.username || "משתמש";
+            document.getElementById('user-display').innerText = data.fullName || data.email;
             document.getElementById('user-balance-nav').innerText = data.balance.toLocaleString() + " ₪";
             if(data.hasDiscordSub) {
                 document.getElementById('discord-status-not-member').classList.add('hidden');
@@ -314,9 +374,13 @@
         onSnapshot(query(collection(db, "userCodes"), where("uid", "==", user.uid)), (snap) => {
             const l = document.getElementById('user-codes-list'); l.innerHTML = "";
             snap.forEach(doc => {
+                const data = doc.data();
                 l.innerHTML += `<li class="card" style="margin-bottom:10px; padding:15px; border-right:4px solid var(--primary); display:flex; justify-content:space-between;">
-                    <span>🎫 ${doc.data().teams}</span>
-                    <span style="font-family:monospace; color:var(--primary); font-weight:bold;">${doc.data().code}</span>
+                    <div>
+                        <div style="font-weight:bold;">🎫 ${data.teams}</div>
+                        <div style="font-size:0.85rem; color:gray;">שעה: ${data.time || 'לא צוין'}</div>
+                    </div>
+                    <span style="font-family:monospace; color:var(--primary); font-weight:bold; align-self:center;">${data.code}</span>
                 </li>`;
             });
         });
@@ -333,9 +397,15 @@
     const list = document.getElementById('admin-users-list'); list.innerHTML = "";
     snap.forEach(d => {
         const u = d.data();
-        // הצגה ללא אימייל בטבלה
+        
+        let emailDisplay = u.email;
+        if(u.role === 'admin') {
+            emailDisplay = '<span style="color:#777;">****** (חסוי - מנהל)</span>';
+        }
+
         list.innerHTML += `<tr>
-            <td>${u.fullName || u.username || 'ללא שם'}</td>
+            <td>${u.fullName || 'ללא שם'}</td>
+            <td>${emailDisplay}</td>
             <td>${u.balance.toLocaleString()} ₪</td>
             <td>${u.hasDiscordSub ? '✅' : '-'}</td>
             <td>
